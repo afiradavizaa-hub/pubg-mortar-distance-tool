@@ -1,0 +1,337 @@
+<Window x:Class="PubgMapDistanceTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:PubgMapDistanceTool.Controls"
+        Title="PUBG 地图测距工具"
+        Width="1280"
+        Height="760"
+        MinWidth="420"
+        MinHeight="220"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="True"
+        WindowStartupLocation="Manual"
+        FontFamily="{StaticResource UiFont}"
+        Foreground="{StaticResource TextBrush}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True"
+        SourceInitialized="Window_SourceInitialized"
+        Loaded="Window_Loaded"
+        Deactivated="Window_Deactivated"
+        StateChanged="Window_StateChanged"
+        Closing="Window_Closing"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Window.Resources>
+        <ControlTemplate x:Key="IosButtonTemplate" TargetType="Button">
+            <Border x:Name="ButtonSurface"
+                    Padding="{TemplateBinding Padding}"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="10">
+                <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.38" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style x:Key="OverlayButton" TargetType="Button">
+            <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Foreground" Value="#26394A" />
+            <Setter Property="Background" Value="#EFFFFFFF" />
+            <Setter Property="BorderBrush" Value="#CFDCE6EF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="11,5" />
+            <Setter Property="Margin" Value="0,0,6,5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template" Value="{StaticResource IosButtonTemplate}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FFFFFFFF" />
+                    <Setter Property="BorderBrush" Value="#B8CAD8E4" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#EAF0F5F9" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="OverlayPrimaryButton"
+               TargetType="Button"
+               BasedOn="{StaticResource OverlayButton}">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#0A84FF" />
+            <Setter Property="BorderBrush" Value="#0A84FF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#168CFF" />
+                    <Setter Property="BorderBrush" Value="#168CFF" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#006EDB" />
+                    <Setter Property="BorderBrush" Value="#006EDB" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="IconButton"
+               TargetType="Button"
+               BasedOn="{StaticResource OverlayButton}">
+            <Setter Property="Padding" Value="9,4" />
+            <Setter Property="Margin" Value="5,0,0,0" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Background" Value="#E8F0F4F8" />
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="RootGrid"
+          Background="#01000000">
+        <controls:MapCanvas x:Name="OverlayCanvas" />
+
+        <Border x:Name="ControlPanel"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="14"
+                MaxWidth="880"
+                Padding="12"
+                Background="#F2FFFFFF"
+                BorderBrush="#E8FFFFFF"
+                BorderThickness="1"
+                CornerRadius="16">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="22"
+                                  ShadowDepth="4"
+                                  Opacity="0.28"
+                                  Color="#000000" />
+            </Border.Effect>
+            <StackPanel>
+                <DockPanel LastChildFill="False">
+                    <Border x:Name="DragHandle"
+                            DockPanel.Dock="Left"
+                            Background="#EDF3F7FA"
+                            BorderBrush="#D7E2EAF0"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="10,4"
+                            Cursor="SizeAll"
+                            MouseLeftButtonDown="DragHandle_MouseLeftButtonDown"
+                            ToolTip="拖动以自由移动悬浮窗；移动测量工具不会改变游戏坐标数据">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⠿"
+                                       Margin="0,-1,6,0"
+                                       Foreground="#0A84FF" />
+                            <TextBlock Text="PUBG 测距"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#172A3A" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="ModeBadge"
+                            DockPanel.Dock="Left"
+                            Margin="8,0,0,0"
+                            Padding="9,4"
+                            Background="#E8F1F7FC"
+                            CornerRadius="9">
+                        <TextBlock x:Name="ModeBadgeText"
+                                   Text="查看"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="#40576D" />
+                    </Border>
+
+                    <Border x:Name="CalibrationBadge"
+                            DockPanel.Dock="Left"
+                            Margin="6,0,0,0"
+                            Padding="9,4"
+                            Background="#FFF1D8"
+                            CornerRadius="9">
+                        <TextBlock x:Name="CalibrationBadgeText"
+                                   Text="未校准"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="#9A5A00" />
+                    </Border>
+
+                    <Button DockPanel.Dock="Right"
+                            Content="退出"
+                            Style="{StaticResource IconButton}"
+                            Click="ExitButton_Click"
+                            ToolTip="立即退出测距工具" />
+                    <Button x:Name="HideButton"
+                            DockPanel.Dock="Right"
+                            Content="隐藏"
+                            Style="{StaticResource IconButton}"
+                            Click="HideButton_Click"
+                            ToolTip="隐藏悬浮窗；再次按 F6 恢复" />
+                    <Button DockPanel.Dock="Right"
+                            Content="收起"
+                            Style="{StaticResource IconButton}"
+                            Click="CollapseButton_Click"
+                            ToolTip="只保留一个可展开的小条" />
+                </DockPanel>
+
+                <WrapPanel Margin="0,9,0,0">
+                    <Button x:Name="CalibrateButton"
+                            Content="校准"
+                            Style="{StaticResource OverlayPrimaryButton}"
+                            Click="CalibrateButton_Click"
+                            ToolTip="显示 600 米基准尺并进入校准" />
+                    <Button x:Name="CompleteCalibrationButton"
+                            Content="完成校准"
+                            Style="{StaticResource OverlayPrimaryButton}"
+                            Click="CompleteCalibrationButton_Click"
+                            ToolTip="应用当前基准尺像素长度" />
+                    <Button x:Name="MeasureButton"
+                            Content="测距"
+                            Style="{StaticResource OverlayPrimaryButton}"
+                            Click="MeasureButton_Click"
+                            ToolTip="在地图上依次点击起点和终点" />
+                    <Button x:Name="RecalibrateButton"
+                            Content="重新校准"
+                            Style="{StaticResource OverlayButton}"
+                            Click="RecalibrateButton_Click" />
+                    <Button x:Name="UndoButton"
+                            Content="撤销"
+                            Style="{StaticResource OverlayButton}"
+                            Click="UndoButton_Click" />
+                    <Button x:Name="DeleteButton"
+                            Content="删除"
+                            Style="{StaticResource OverlayButton}"
+                            Click="DeleteButton_Click" />
+                    <Button x:Name="ClearButton"
+                            Content="清除"
+                            Style="{StaticResource OverlayButton}"
+                            Click="ClearButton_Click" />
+                    <Button x:Name="CopyButton"
+                            Content="复制"
+                            Style="{StaticResource OverlayButton}"
+                            Click="CopyButton_Click" />
+                </WrapPanel>
+
+                <WrapPanel>
+                    <Button x:Name="ClickThroughButton"
+                            Content="鼠标穿透"
+                            Style="{StaticResource OverlayButton}"
+                            Click="ClickThroughButton_Click"
+                            ToolTip="穿透后鼠标交给游戏，再次按 F9 返回编辑" />
+                    <Button x:Name="SnapButton"
+                            Content="贴合游戏"
+                            Style="{StaticResource OverlayButton}"
+                            Click="SnapButton_Click"
+                            ToolTip="将悬浮窗对齐到 PUBG 客户区" />
+                    <Button x:Name="NormalModeButton"
+                            Content="普通模式"
+                            Style="{StaticResource OverlayButton}"
+                            Click="NormalModeButton_Click"
+                            ToolTip="降低透明度作为兼容回退" />
+                    <Button Content="快捷键"
+                            Style="{StaticResource OverlayButton}"
+                            Click="HotkeySettingsButton_Click" />
+                </WrapPanel>
+
+                <Grid Margin="2,4,2,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="StatusText"
+                               Grid.Column="0"
+                               Text="正在检测 PUBG 游戏窗口…"
+                               FontSize="10.5"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="#40515F" />
+                    <TextBlock x:Name="MeasurementStatusText"
+                               Grid.Column="1"
+                               Margin="10,0,0,0"
+                               FontSize="10.5"
+                               FontWeight="SemiBold"
+                               Foreground="#0A84FF" />
+                </Grid>
+                <TextBlock x:Name="CoordinateStatusText"
+                           Margin="1,3,1,0"
+                           FontSize="9.5"
+                           Foreground="#657686" />
+                <TextBlock x:Name="HotkeyHintText"
+                           Margin="1,2,1,0"
+                           FontSize="9.5"
+                           Foreground="#6F8090"
+                           Text="F6 显示/隐藏 · F7 校准 · F8 测距 · F9 穿透 · 切换应用自动最小化" />
+                <TextBlock Margin="1,2,1,0"
+                           FontSize="9.5"
+                           Foreground="#99672E"
+                           Text="游戏内地图缩放、地图布局或分辨率变化后，请重新校准。" />
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="MiniPanel"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="14"
+                Padding="9,6"
+                Background="#F2FFFFFF"
+                BorderBrush="#E8FFFFFF"
+                BorderThickness="1"
+                CornerRadius="12"
+                Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="MiniStatusText"
+                           Text="PUBG 测距 · 未校准"
+                           VerticalAlignment="Center"
+                           FontSize="10.5"
+                           FontWeight="SemiBold"
+                           Foreground="#26394A" />
+                <Button Content="展开"
+                        Margin="9,0,0,0"
+                        Style="{StaticResource IconButton}"
+                        Click="ExpandButton_Click" />
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="TransientToast"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Margin="0,0,0,42"
+                Padding="14,8"
+                Background="#F2FFFFFF"
+                BorderBrush="#E4FFFFFF"
+                BorderThickness="1"
+                CornerRadius="12"
+                Visibility="Collapsed">
+            <TextBlock x:Name="ToastText"
+                       FontSize="11"
+                       FontWeight="Medium"
+                       Foreground="#223747" />
+        </Border>
+
+        <Border x:Name="ResizeGrip"
+                Width="22"
+                Height="22"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Background="#D9FFFFFF"
+                BorderBrush="#B9D4E1EB"
+                BorderThickness="1,1,0,0"
+                CornerRadius="10,0,0,0"
+                Cursor="SizeNWSE"
+                MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown"
+                MouseMove="ResizeGrip_MouseMove"
+                MouseLeftButtonUp="ResizeGrip_MouseLeftButtonUp">
+            <TextBlock Text="◢"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       Foreground="#5E89AD" />
+        </Border>
+    </Grid>
+</Window>

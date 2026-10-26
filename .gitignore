@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+outputs/
+work/
+
+# IDE state
+.vs/
+.idea/
+*.user
+*.suo
+
+# Runtime files
+*.log
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db

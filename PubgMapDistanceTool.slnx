@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/PubgMapDistanceTool.Core/PubgMapDistanceTool.Core.csproj" />
+  <Project Path="src/PubgMapDistanceTool/PubgMapDistanceTool.csproj" />
+  <Project Path="tests/PubgMapDistanceTool.Tests/PubgMapDistanceTool.Tests.csproj" />
+</Solution>

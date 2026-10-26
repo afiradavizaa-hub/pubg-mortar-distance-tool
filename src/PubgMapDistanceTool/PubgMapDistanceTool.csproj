@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>PubgMapDistanceTool</AssemblyName>
+    <RootNamespace>PubgMapDistanceTool</RootNamespace>
+    <Product>PUBG 地图测距工具</Product>
+    <AssemblyTitle>PUBG 地图测距工具</AssemblyTitle>
+    <Version>1.0.3</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PubgMapDistanceTool.Core\PubgMapDistanceTool.Core.csproj" />
+  </ItemGroup>
+</Project>
