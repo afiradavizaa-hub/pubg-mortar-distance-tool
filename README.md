@@ -2,6 +2,12 @@
 
 Windows 透明悬浮窗测距工具。直接覆盖在窗口化或无边框的 PUBG 地图上，以固定 600 米基准尺校准后测量任意两点的平面直线距离。无需导入截图，不读取游戏内存，不注入游戏进程。
 
+## 下载
+
+- [最新版本](https://github.com/afiradavizaa-hub/pubg-mortar-distance-tool/releases/latest)
+- [Windows x64 单文件 EXE](https://github.com/afiradavizaa-hub/pubg-mortar-distance-tool/releases/latest/download/PubgMapDistanceTool.exe)
+- [Windows x64 压缩包](https://github.com/afiradavizaa-hub/pubg-mortar-distance-tool/releases/latest/download/PUBG-Map-Distance-Tool-win-x64.zip)
+
 ## 技术栈
 
 - C# / WPF / .NET 10
