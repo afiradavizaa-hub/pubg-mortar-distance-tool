@@ -20,8 +20,8 @@ public enum MapInteractionMode
 
 public sealed class MapCanvas : FrameworkElement
 {
-    private const double EndpointHitRadius = 14d;
-    private const double LineHitRadius = 9d;
+    private const double EndpointHitRadius = 10d;
+    private const double LineHitRadius = 6d;
     private readonly List<MeasurementRecord> _measurements = [];
     private CoordinateSpace? _coordinateSpace;
     private Calibration? _calibration;
@@ -617,8 +617,8 @@ public sealed class MapCanvas : FrameworkElement
             var selected = SelectedMeasurementNumber == record.Number;
             dc.DrawLine(selected ? MeasurementSelectedShadowPen : MeasurementShadowPen, a, b);
             dc.DrawLine(selected ? MeasurementSelectedPen : MeasurementPen, a, b);
-            DrawEndpoint(dc, a, selected ? AccentBrush : CyanBrush, selected ? 5 : 4.25);
-            DrawEndpoint(dc, b, selected ? AccentBrush : CyanBrush, selected ? 5 : 4.25);
+            DrawEndpoint(dc, a, selected ? AccentBrush : CyanBrush, selected ? 3.2 : 2.5);
+            DrawEndpoint(dc, b, selected ? AccentBrush : CyanBrush, selected ? 3.2 : 2.5);
 
             var result = _calibration.Measure(start, end);
             var normal = PerpendicularNormalized(a, b);
@@ -650,7 +650,7 @@ public sealed class MapCanvas : FrameworkElement
 
         dc.DrawLine(PreviewShadowPen, a, b);
         dc.DrawLine(PreviewPen, a, b);
-        DrawEndpoint(dc, a, CyanBrush, 5);
+        DrawEndpoint(dc, a, CyanBrush, 3);
         var result = _calibration.Measure(_measureStart.Value, _previewPoint.Value);
         var midpoint = Midpoint(a, b);
         DrawLabel(
@@ -661,15 +661,16 @@ public sealed class MapCanvas : FrameworkElement
             BrightTextBrush);
     }
 
-    private void DrawEndpoint(DrawingContext dc, Point center, Brush fill, double radius = 7)
+    private void DrawEndpoint(DrawingContext dc, Point center, Brush fill, double radius = 3)
     {
         dc.DrawEllipse(fill, EndpointOutlinePen, center, radius, radius);
+        dc.DrawEllipse(BrightTextBrush, null, center, 0.8, 0.8);
     }
 
     private void DrawCalibrationEndpoint(DrawingContext dc, Point center)
     {
-        const double horizontalHalfLength = 8;
-        const double verticalHalfLength = 13;
+        const double horizontalHalfLength = 6;
+        const double verticalHalfLength = 9;
         var horizontalStart = new Point(center.X - horizontalHalfLength, center.Y);
         var horizontalEnd = new Point(center.X + horizontalHalfLength, center.Y);
         var verticalStart = new Point(center.X, center.Y - verticalHalfLength);
@@ -938,30 +939,30 @@ public sealed class MapCanvas : FrameworkElement
     private static readonly Brush PreviewLabelBrush = FrozenBrush(Color.FromArgb(228, 5, 43, 54));
     private static readonly Pen EndpointOutlinePen = FrozenPen(
         FrozenBrush(Color.FromArgb(255, 7, 13, 18)),
-        1.6);
+        0.8);
     private static readonly Pen CalibrationEndpointShadowPen = FrozenPen(
         FrozenBrush(Color.FromArgb(210, 0, 0, 0)),
-        2.8);
-    private static readonly Pen CalibrationEndpointPen = FrozenPen(AccentBrush, 1.15);
-    private static readonly Pen RulerPen = FrozenPen(AccentBrush, 1.2);
+        1.8);
+    private static readonly Pen CalibrationEndpointPen = FrozenPen(AccentBrush, 0.9);
+    private static readonly Pen RulerPen = FrozenPen(AccentBrush, 1);
     private static readonly Pen RulerShadowPen = FrozenPen(
         FrozenBrush(Color.FromArgb(210, 0, 0, 0)),
-        3.2);
-    private static readonly Pen MeasurementPen = FrozenPen(CyanBrush, 1.8);
+        2.2);
+    private static readonly Pen MeasurementPen = FrozenPen(CyanBrush, 1.2);
     private static readonly Pen MeasurementShadowPen = FrozenPen(
         FrozenBrush(Color.FromArgb(210, 0, 0, 0)),
-        4.4);
-    private static readonly Pen MeasurementSelectedPen = FrozenPen(AccentBrush, 2.5);
+        2.6);
+    private static readonly Pen MeasurementSelectedPen = FrozenPen(AccentBrush, 1.6);
     private static readonly Pen MeasurementSelectedShadowPen = FrozenPen(
         FrozenBrush(Color.FromArgb(220, 0, 0, 0)),
-        5.8);
+        3.2);
     private static readonly Pen PreviewPen = FrozenPen(
         FrozenBrush(Color.FromArgb(245, 107, 236, 255)),
-        1.5,
+        1,
         new DashStyle([5, 4], 0));
     private static readonly Pen PreviewShadowPen = FrozenPen(
         FrozenBrush(Color.FromArgb(190, 0, 0, 0)),
-        3.8);
+        2.2);
     private static readonly Pen LabelOutlinePen = FrozenPen(
         FrozenBrush(Color.FromArgb(175, 255, 255, 255)),
         1);

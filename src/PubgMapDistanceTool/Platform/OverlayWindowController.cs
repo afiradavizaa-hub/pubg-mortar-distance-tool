@@ -91,6 +91,26 @@ public static class OverlayWindowController
             (topmost ? 0u : NativeMethods.SwpNoZOrder));
     }
 
+    public static void ReassertTopmost(Window window)
+    {
+        var handle = GetHandle(window);
+        if (handle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        _ = NativeMethods.SetWindowPos(
+            handle,
+            NativeMethods.HwndTopmost,
+            0,
+            0,
+            0,
+            0,
+            NativeMethods.SwpNoMove |
+            NativeMethods.SwpNoSize |
+            NativeMethods.SwpNoActivate);
+    }
+
     public static string DescribeWin32Error() =>
         new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()).Message;
 }

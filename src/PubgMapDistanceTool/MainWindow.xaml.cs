@@ -78,7 +78,7 @@ public partial class MainWindow : Window
         _windowSource = HwndSource.FromHwnd(handle);
         _windowSource?.AddHook(WindowProc);
         _hotkeys.ActionRequested += Hotkeys_ActionRequested;
-        var errors = _hotkeys.Register(_hotkeySettings, handle);
+        var errors = _hotkeys.Register(_hotkeySettings);
         if (errors.Count > 0)
         {
             _ = Dispatcher.BeginInvoke(() =>
@@ -94,7 +94,7 @@ public partial class MainWindow : Window
         if (!_hotkeys.IsRegistered(HotkeyAction.ToggleWindow))
         {
             HideButton.IsEnabled = false;
-            HideButton.ToolTip = "显示/隐藏快捷键注册失败，请先在快捷键设置中更换 F 键。";
+            HideButton.ToolTip = "显示/隐藏快捷键监听失败，请先在快捷键设置中更换组合键。";
         }
 
         if (_activeSpace?.Kind == CoordinateSpaceKind.DesktopFallback)
@@ -115,12 +115,21 @@ public partial class MainWindow : Window
 
     private void Window_Deactivated(object? sender, EventArgs e)
     {
-        if (!IsVisible || _settingsOpen || _suppressAutoHide)
+        if (!IsVisible ||
+            WindowState == WindowState.Minimized ||
+            _settingsOpen ||
+            _suppressAutoHide ||
+            _normalMode)
         {
             return;
         }
 
-        WindowState = WindowState.Minimized;
+        // Keep the overlay available when Alt+Tab moves focus back to a
+        // fullscreen-windowed game. Reassert topmost without activating so
+        // switching applications does not hide the tool or steal input.
+        _ = Dispatcher.BeginInvoke(
+            () => OverlayWindowController.ReassertTopmost(this),
+            DispatcherPriority.Background);
     }
 
     private void Window_StateChanged(object? sender, EventArgs e)
@@ -443,9 +452,7 @@ public partial class MainWindow : Window
 
             _hotkeySettings = dialog.Result;
             HotkeySettingsStore.Save(_hotkeySettings);
-            var errors = _hotkeys.Register(
-                _hotkeySettings,
-                OverlayWindowController.GetHandle(this));
+            var errors = _hotkeys.Register(_hotkeySettings);
             SetStatus(
                 errors.Count == 0
                     ? "快捷键已保存并立即生效。"

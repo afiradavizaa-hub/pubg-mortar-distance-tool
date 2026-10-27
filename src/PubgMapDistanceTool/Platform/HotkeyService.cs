@@ -1,5 +1,6 @@
+using System.Runtime.InteropServices;
 using System.Windows.Input;
-using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace PubgMapDistanceTool.Platform;
 
@@ -13,56 +14,70 @@ public enum HotkeyAction
 
 public sealed class HotkeyService
 {
-    private readonly Dictionary<int, HotkeyAction> _registered = [];
-    private IntPtr _handle;
+    private readonly List<HotkeyBinding> _bindings = [];
+    private readonly HashSet<int> _keysDown = [];
+    private Dispatcher? _dispatcher;
+    private NativeMethods.LowLevelKeyboardProc? _hookCallback;
+    private IntPtr _keyboardHook;
 
-    public IReadOnlyList<string> Register(HotkeySettings settings, IntPtr handle)
+    public IReadOnlyList<string> Register(HotkeySettings settings)
     {
         UnregisterAll();
-        _handle = handle;
+        _dispatcher = Dispatcher.CurrentDispatcher;
         var errors = new List<string>();
-        RegisterOne(settings.ToggleWindow, HotkeyAction.ToggleWindow, errors);
-        RegisterOne(settings.Calibration, HotkeyAction.Calibration, errors);
-        RegisterOne(settings.Measurement, HotkeyAction.Measurement, errors);
-        RegisterOne(settings.ToggleClickThrough, HotkeyAction.ToggleClickThrough, errors);
+        AddBinding(settings.ToggleWindow, HotkeyAction.ToggleWindow, errors);
+        AddBinding(settings.Calibration, HotkeyAction.Calibration, errors);
+        AddBinding(settings.Measurement, HotkeyAction.Measurement, errors);
+        AddBinding(settings.ToggleClickThrough, HotkeyAction.ToggleClickThrough, errors);
+
+        if (_bindings.Count > 0)
+        {
+            _hookCallback = KeyboardHookCallback;
+            _keyboardHook = NativeMethods.SetWindowsHookEx(
+                NativeMethods.WhKeyboardLl,
+                _hookCallback,
+                NativeMethods.GetModuleHandle(null),
+                0);
+            if (_keyboardHook == IntPtr.Zero)
+            {
+                _bindings.Clear();
+                errors.Add($"全局快捷键监听失败：{OverlayWindowController.DescribeWin32Error()}");
+            }
+        }
+
         return errors;
     }
 
     public bool HandleMessage(int message, IntPtr wParam, IntPtr lParam)
     {
-        if (message != 0x0312 || !_registered.TryGetValue(wParam.ToInt32(), out var action))
-        {
-            return false;
-        }
-
-        ActionRequested?.Invoke(this, action);
-        return true;
+        // Kept for Windows message-hook compatibility. Keyboard shortcuts are
+        // now observed by the low-level hook below and never consume input.
+        return false;
     }
 
     public event EventHandler<HotkeyAction>? ActionRequested;
 
     public bool IsRegistered(HotkeyAction action) =>
-        _registered.ContainsValue(action);
+        _bindings.Any(binding => binding.Action == action);
 
     public void UnregisterAll()
     {
-        if (_handle == IntPtr.Zero)
+        _keysDown.Clear();
+        _bindings.Clear();
+        if (_keyboardHook == IntPtr.Zero)
         {
             return;
         }
 
-        foreach (var id in _registered.Keys)
-        {
-            _ = NativeMethods.UnregisterHotKey(_handle, id);
-        }
-
-        _registered.Clear();
+        _ = NativeMethods.UnhookWindowsHookEx(_keyboardHook);
+        _keyboardHook = IntPtr.Zero;
+        _hookCallback = null;
     }
 
     public static bool IsSupportedKey(string key)
         => HotkeyGesture.TryParse(key, out _);
 
-    private void RegisterOne(string keyName, HotkeyAction action, List<string> errors)
+    private void AddBinding(string keyName, HotkeyAction action, List<string> errors)
     {
         if (!HotkeyGesture.TryParse(keyName, out var gesture))
         {
@@ -75,36 +90,85 @@ public sealed class HotkeyService
             return;
         }
 
-        var modifiers = NativeMethods.ModNoRepeat;
-        if (gesture.Modifiers.HasFlag(ModifierKeys.Control))
+        var virtualKey = KeyInterop.VirtualKeyFromKey(gesture.Key);
+        if (virtualKey != 0)
         {
-            modifiers |= NativeMethods.ModControl;
+            _bindings.Add(new HotkeyBinding(action, virtualKey, gesture.Modifiers));
         }
-
-        if (gesture.Modifiers.HasFlag(ModifierKeys.Alt))
-        {
-            modifiers |= NativeMethods.ModAlt;
-        }
-
-        if (gesture.Modifiers.HasFlag(ModifierKeys.Shift))
-        {
-            modifiers |= NativeMethods.ModShift;
-        }
-
-        if (gesture.Modifiers.HasFlag(ModifierKeys.Windows))
-        {
-            modifiers |= NativeMethods.ModWin;
-        }
-
-        var id = (int)action + 0x4200;
-        var virtualKey = (uint)KeyInterop.VirtualKeyFromKey(gesture.Key);
-        if (virtualKey == 0 ||
-            !NativeMethods.RegisterHotKey(_handle, id, modifiers, virtualKey))
-        {
-            errors.Add($"{gesture.ToDisplayString()} 注册失败，可能已被系统或其他程序占用。");
-            return;
-        }
-
-        _registered[id] = action;
     }
+
+    private IntPtr KeyboardHookCallback(int code, IntPtr wParam, IntPtr lParam)
+    {
+        if (code >= 0)
+        {
+            try
+            {
+                var message = wParam.ToInt32();
+                var isKeyDown =
+                    message is NativeMethods.WmKeyDown or NativeMethods.WmSysKeyDown;
+                var isKeyUp =
+                    message is NativeMethods.WmKeyUp or NativeMethods.WmSysKeyUp;
+                if (isKeyDown || isKeyUp)
+                {
+                    var input = Marshal.PtrToStructure<NativeMethods.LowLevelKeyboardInput>(lParam);
+                    var virtualKey = checked((int)input.VirtualKeyCode);
+                    if (isKeyUp)
+                    {
+                        _keysDown.Remove(virtualKey);
+                    }
+                    else if (_keysDown.Add(virtualKey))
+                    {
+                        var binding = _bindings.FirstOrDefault(candidate =>
+                            candidate.VirtualKey == virtualKey &&
+                            ModifiersMatch(candidate.Modifiers, virtualKey));
+                        if (binding is not null)
+                        {
+                            _dispatcher?.BeginInvoke(
+                                DispatcherPriority.Input,
+                                new Action(() => ActionRequested?.Invoke(this, binding.Action)));
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // A hook must never break system input. Errors only disable this
+                // trigger; the key event is still forwarded to the game below.
+            }
+        }
+
+        return NativeMethods.CallNextHookEx(_keyboardHook, code, wParam, lParam);
+    }
+
+    private static bool ModifiersMatch(ModifierKeys required, int primaryVirtualKey)
+    {
+        var primaryIsControl = primaryVirtualKey is
+            NativeMethods.VkLControl or NativeMethods.VkRControl;
+        var primaryIsShift = primaryVirtualKey is
+            NativeMethods.VkLShift or NativeMethods.VkRShift;
+        var primaryIsAlt = primaryVirtualKey is
+            NativeMethods.VkLAlt or NativeMethods.VkRAlt;
+        var primaryIsWin = primaryVirtualKey is
+            NativeMethods.VkLWin or NativeMethods.VkRWin;
+
+        var controlPressed = !primaryIsControl && IsPressed(NativeMethods.VkControl);
+        var shiftPressed = !primaryIsShift && IsPressed(NativeMethods.VkShift);
+        var altPressed = !primaryIsAlt && IsPressed(NativeMethods.VkAlt);
+        var winPressed =
+            !primaryIsWin &&
+            (IsPressed(NativeMethods.VkLWin) || IsPressed(NativeMethods.VkRWin));
+
+        return controlPressed == required.HasFlag(ModifierKeys.Control) &&
+               shiftPressed == required.HasFlag(ModifierKeys.Shift) &&
+               altPressed == required.HasFlag(ModifierKeys.Alt) &&
+               winPressed == required.HasFlag(ModifierKeys.Windows);
+    }
+
+    private static bool IsPressed(int virtualKey) =>
+        (NativeMethods.GetAsyncKeyState(virtualKey) & 0x8000) != 0;
+
+    private sealed record HotkeyBinding(
+        HotkeyAction Action,
+        int VirtualKey,
+        ModifierKeys Modifiers);
 }

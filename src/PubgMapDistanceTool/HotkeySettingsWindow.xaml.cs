@@ -98,13 +98,12 @@ public partial class HotkeySettingsWindow : Window
                 : new HotkeyGesture(ModifierKeys.None, Key.None))
             .Any(gesture =>
                 !gesture.IsEmpty &&
-                gesture.Modifiers == ModifierKeys.None &&
-                gesture.Key is < Key.F1 or > Key.F24);
+                gesture.Modifiers == ModifierKeys.None);
         if (hasRiskySingleKey)
         {
             var result = MessageBox.Show(
                 this,
-                "你设置了不带 Ctrl / Alt / Shift / Win 的普通按键。它会在全局抢占该按键，可能影响游戏或正常输入。仍要保存吗？",
+                "你设置了不带 Ctrl / Alt / Shift / Win 的单键。按键仍会传给游戏，但可能同时触发工具功能和游戏内同名操作。仍要保存吗？",
                 "单键快捷键风险",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
@@ -151,6 +150,23 @@ public partial class HotkeySettingsWindow : Window
         if (win.IsChecked == true)
         {
             modifiers |= ModifierKeys.Windows;
+        }
+
+        if (key is Key.LeftCtrl or Key.RightCtrl)
+        {
+            modifiers &= ~ModifierKeys.Control;
+        }
+        else if (key is Key.LeftShift or Key.RightShift)
+        {
+            modifiers &= ~ModifierKeys.Shift;
+        }
+        else if (key is Key.LeftAlt or Key.RightAlt)
+        {
+            modifiers &= ~ModifierKeys.Alt;
+        }
+        else if (key is Key.LWin or Key.RWin)
+        {
+            modifiers &= ~ModifierKeys.Windows;
         }
 
         return new HotkeyGesture(modifiers, key).ToStorageString();

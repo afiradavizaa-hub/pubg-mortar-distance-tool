@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Windows.Input;
 
 namespace PubgMapDistanceTool.Platform;
@@ -124,16 +125,17 @@ public sealed record HotkeyGesture(ModifierKeys Modifiers, Key Key)
 
 public sealed record HotkeySettings
 {
-    public string ToggleWindow { get; init; } = "F6";
+    public string ToggleWindow { get; init; } = "Up";
 
-    public string Calibration { get; init; } = "F7";
+    public string Calibration { get; init; } = "None";
 
-    public string Measurement { get; init; } = "F8";
+    public string Measurement { get; init; } = "None";
 
-    public string ToggleClickThrough { get; init; } = "F9";
+    public string ToggleClickThrough { get; init; } = "Down";
 
     public static HotkeySettings Default => new();
 
+    [JsonIgnore]
     public IReadOnlyList<(string Name, string Binding)> Bindings =>
     [
         ("显示/隐藏", ToggleWindow),
@@ -178,15 +180,7 @@ public static class HotkeyKeyCatalog
         Key.None,
         Key.DeadCharProcessed,
         Key.ImeProcessed,
-        Key.System,
-        Key.LeftCtrl,
-        Key.RightCtrl,
-        Key.LeftAlt,
-        Key.RightAlt,
-        Key.LeftShift,
-        Key.RightShift,
-        Key.LWin,
-        Key.RWin
+        Key.System
     ];
 
     public static IReadOnlyList<Key> AvailableKeys { get; } =
@@ -225,6 +219,32 @@ public static class HotkeyKeyCatalog
             Key.OemCloseBrackets => "]",
             Key.OemPipe => "\\",
             Key.OemTilde => "`",
+            Key.LeftCtrl => "左 Ctrl",
+            Key.RightCtrl => "右 Ctrl",
+            Key.LeftAlt => "左 Alt",
+            Key.RightAlt => "右 Alt",
+            Key.LeftShift => "左 Shift",
+            Key.RightShift => "右 Shift",
+            Key.LWin => "左 Win",
+            Key.RWin => "右 Win",
+            Key.MediaNextTrack => "下一曲",
+            Key.MediaPreviousTrack => "上一曲",
+            Key.MediaPlayPause => "播放 / 暂停",
+            Key.MediaStop => "停止播放",
+            Key.VolumeMute => "静音",
+            Key.VolumeDown => "音量减",
+            Key.VolumeUp => "音量加",
+            Key.BrowserBack => "浏览器后退",
+            Key.BrowserForward => "浏览器前进",
+            Key.BrowserRefresh => "浏览器刷新",
+            Key.BrowserStop => "浏览器停止",
+            Key.BrowserSearch => "浏览器搜索",
+            Key.BrowserFavorites => "浏览器收藏夹",
+            Key.BrowserHome => "浏览器主页",
+            Key.LaunchMail => "打开邮件",
+            Key.SelectMedia => "选择媒体",
+            Key.LaunchApplication1 => "应用键 1",
+            Key.LaunchApplication2 => "应用键 2",
             _ => key.ToString()
         };
 
@@ -249,6 +269,12 @@ public static class HotkeySettingsStore
             "PubgMapDistanceTool",
             "settings.json");
 
+    private static bool IsLegacyFunctionKeyDefault(HotkeySettings settings) =>
+        string.Equals(settings.ToggleWindow, "F6", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(settings.Calibration, "F7", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(settings.Measurement, "F8", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(settings.ToggleClickThrough, "F9", StringComparison.OrdinalIgnoreCase);
+
     public static HotkeySettings Load()
     {
         try
@@ -261,9 +287,28 @@ public static class HotkeySettingsStore
             var settings = JsonSerializer.Deserialize<HotkeySettings>(
                 File.ReadAllText(SettingsPath),
                 JsonOptions);
-            return settings is { } loaded && loaded.Validate().Count == 0
-                ? loaded
-                : HotkeySettings.Default;
+            if (settings is not { } loaded || loaded.Validate().Count > 0)
+            {
+                return HotkeySettings.Default;
+            }
+
+            if (IsLegacyFunctionKeyDefault(loaded))
+            {
+                var migrated = HotkeySettings.Default;
+                try
+                {
+                    Save(migrated);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Keep the migrated in-memory defaults even if the settings
+                    // file cannot be rewritten.
+                }
+
+                return migrated;
+            }
+
+            return loaded;
         }
         catch (Exception ex) when (
             ex is IOException or UnauthorizedAccessException or JsonException)

@@ -11,7 +11,7 @@
     <RootNamespace>PubgMapDistanceTool</RootNamespace>
     <Product>PUBG 地图测距工具</Product>
     <AssemblyTitle>PUBG 地图测距工具</AssemblyTitle>
-    <Version>1.0.3</Version>
+    <Version>1.0.7</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 

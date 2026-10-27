@@ -245,6 +245,14 @@ internal static class Program
         AssertEqual(false, HotkeyGesture.TryParse("Hyper+A", out _));
         AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.A));
         AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.NumPad9));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.LeftCtrl));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.RightAlt));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.LeftShift));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.RWin));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.MediaPlayPause));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.VolumeUp));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.BrowserBack));
+        AssertTrue(HotkeyKeyCatalog.AvailableKeys.Contains(Key.OemClear));
 
         var duplicate = new HotkeySettings
         {

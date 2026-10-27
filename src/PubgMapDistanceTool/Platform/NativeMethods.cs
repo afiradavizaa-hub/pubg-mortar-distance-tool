@@ -14,11 +14,22 @@ internal static class NativeMethods
     internal const uint SwpFrameChanged = 0x0020;
     internal static readonly IntPtr HwndTopmost = new(-1);
 
-    internal const uint ModNoRepeat = 0x4000;
-    internal const uint ModAlt = 0x0001;
-    internal const uint ModControl = 0x0002;
-    internal const uint ModShift = 0x0004;
-    internal const uint ModWin = 0x0008;
+    internal const int WhKeyboardLl = 13;
+    internal const int WmKeyDown = 0x0100;
+    internal const int WmKeyUp = 0x0101;
+    internal const int WmSysKeyDown = 0x0104;
+    internal const int WmSysKeyUp = 0x0105;
+    internal const int VkShift = 0x10;
+    internal const int VkControl = 0x11;
+    internal const int VkAlt = 0x12;
+    internal const int VkLShift = 0xA0;
+    internal const int VkRShift = 0xA1;
+    internal const int VkLControl = 0xA2;
+    internal const int VkRControl = 0xA3;
+    internal const int VkLAlt = 0xA4;
+    internal const int VkRAlt = 0xA5;
+    internal const int VkLWin = 0x5B;
+    internal const int VkRWin = 0x5C;
     internal const int VkF1 = 0x70;
     internal const int SmXVirtualScreen = 76;
     internal const int SmYVirtualScreen = 77;
@@ -26,6 +37,7 @@ internal static class NativeMethods
     internal const int SmCyVirtualScreen = 79;
 
     internal delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+    internal delegate IntPtr LowLevelKeyboardProc(int code, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Rect
@@ -41,6 +53,16 @@ internal static class NativeMethods
     {
         public int X;
         public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LowLevelKeyboardInput
+    {
+        public uint VirtualKeyCode;
+        public uint ScanCode;
+        public uint Flags;
+        public uint Time;
+        public UIntPtr ExtraInfo;
     }
 
     [DllImport("user32.dll")]
@@ -105,13 +127,29 @@ internal static class NativeMethods
         int height,
         uint flags);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern IntPtr SetWindowsHookEx(
+        int hookId,
+        LowLevelKeyboardProc callback,
+        IntPtr module,
+        uint threadId);
+
+    [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint modifiers, uint virtualKey);
+    internal static extern bool UnhookWindowsHookEx(IntPtr hook);
 
     [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    internal static extern IntPtr CallNextHookEx(
+        IntPtr hook,
+        int code,
+        IntPtr wParam,
+        IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    internal static extern short GetAsyncKeyState(int virtualKey);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    internal static extern IntPtr GetModuleHandle(string? moduleName);
 
     [DllImport("user32.dll")]
     internal static extern int GetSystemMetrics(int index);

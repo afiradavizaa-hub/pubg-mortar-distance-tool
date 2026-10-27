@@ -173,7 +173,7 @@
                             Content="隐藏"
                             Style="{StaticResource IconButton}"
                             Click="HideButton_Click"
-                            ToolTip="隐藏悬浮窗；再次按 F6 恢复" />
+                            ToolTip="隐藏悬浮窗；再次按 ↑ 恢复" />
                     <Button DockPanel.Dock="Right"
                             Content="收起"
                             Style="{StaticResource IconButton}"
@@ -224,7 +224,7 @@
                             Content="鼠标穿透"
                             Style="{StaticResource OverlayButton}"
                             Click="ClickThroughButton_Click"
-                            ToolTip="穿透后鼠标交给游戏，再次按 F9 返回编辑" />
+                            ToolTip="穿透后鼠标交给游戏，再次按 ↓ 返回编辑" />
                     <Button x:Name="SnapButton"
                             Content="贴合游戏"
                             Style="{StaticResource OverlayButton}"
@@ -266,7 +266,7 @@
                            Margin="1,2,1,0"
                            FontSize="9.5"
                            Foreground="#6F8090"
-                           Text="F6 显示/隐藏 · F7 校准 · F8 测距 · F9 穿透 · 切换应用自动最小化" />
+                           Text="↑ 显示/隐藏 · ↓ 鼠标穿透 · 快捷键不拦截游戏输入" />
                 <TextBlock Margin="1,2,1,0"
                            FontSize="9.5"
                            Foreground="#99672E"

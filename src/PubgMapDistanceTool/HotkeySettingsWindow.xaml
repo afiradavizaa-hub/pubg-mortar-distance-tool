@@ -62,7 +62,7 @@
                        FontSize="24"
                        FontWeight="Bold"
                        Foreground="#1C1C1E" />
-            <TextBlock Text="从全键盘按键中选择，并勾选 Ctrl / Alt / Shift / Win 组成组合键。"
+            <TextBlock Text="可选择全部物理按键（含左右修饰键、小键盘、媒体键和 OEM 键），并组合 Ctrl / Alt / Shift / Win。"
                        Margin="0,5,0,0"
                        FontSize="11.5"
                        Foreground="#6C6C70" />
@@ -213,7 +213,7 @@
                        TextWrapping="Wrap"
                        FontSize="10"
                        Foreground="#8E8E93"
-                       Text="单键可能抢占游戏输入；被 Windows 保留的组合会显示注册失败。" />
+                       Text="单键可能同时触发游戏操作；Fn 等不向 Windows 上报的厂商私有键无法捕获。" />
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                 <Button Content="取消"
                         Width="82"
